@@ -19,13 +19,3 @@ pub trait Factory {
 pub trait ProvideWith<T>: Provide<T> + Sized {
     fn provide_with<E, F: FnOnce(T) -> Result<T, E>>(&self, f: F) -> Result<Self, E>;
 }
-
-
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

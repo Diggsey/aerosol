@@ -3,6 +3,9 @@ name = "aerosol"
 version = "0.1.0"
 authors = ["Diggory Blake <diggsey@googlemail.com>"]
 edition = "2018"
+description = "Dependency injection with compile-time guarantees"
+repository = "https://github.com/Diggsey/aerosol"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 tt-call = "1.0"
