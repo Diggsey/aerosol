@@ -85,7 +85,7 @@ macro_rules! private_define_context {
             $(auto_field = [{ $($auto_field)* }])*
             auto_field = [{ $field_name, $t, $factory }]
             $(field = [{ $($field)* }])*
-            rest = [{ $($rest)+ }]
+            rest = [{ $($rest)* }]
         }
     };
     {
@@ -113,7 +113,7 @@ macro_rules! private_define_context {
             $(auto_field = [{ $($auto_field)* }])*
             $(field = [{ $($field)* }])*
             field = [{ $field_name, $t }]
-            rest = [{ $($rest)+ }]
+            rest = [{ $($rest)* }]
         }
     };
     {
