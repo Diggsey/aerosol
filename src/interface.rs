@@ -1,4 +1,4 @@
-
+#[doc(hidden)]
 #[macro_export(local_inner_macros)]
 macro_rules! generate_trait_def {
     {
@@ -20,7 +20,7 @@ macro_rules! generate_trait_def {
     };
 }
 
-
+#[doc(hidden)]
 #[macro_export(local_inner_macros)]
 macro_rules! generate_trait_impl {
     {
@@ -44,6 +44,7 @@ macro_rules! generate_trait_impl {
     };
 }
 
+#[doc(hidden)]
 #[macro_export(local_inner_macros)]
 macro_rules! private_define_interface {
     {
@@ -128,6 +129,57 @@ macro_rules! private_define_interface {
         }
     };
 }
+
+/// Define a new interface. Used at any layer of your application
+/// to declare what dependencies are required by that part of the
+/// program.
+/// 
+/// Interfaces follow a trait-like syntax, except that they may
+/// only contain "getter" methods of a particular form. The names
+/// of these methods are for the most part unimportant, but the
+/// return types are used to identify dependencies required for
+/// a context to implement this interface.
+/// 
+/// ## Example
+/// 
+/// ```
+/// use std::sync::Arc;
+/// 
+/// #[derive(Debug)]
+/// struct Foo;
+/// 
+/// aerosol::define_interface!(
+///     TestInterface {
+///         fn foo(&self) -> Arc<Foo>;
+///     }
+/// );
+/// ```
+/// 
+/// Interfaces may also specify super-traits, which can themselves
+/// be interfaces. Interfaces do not need to explicitly list
+/// dependencies if they are transitively required by one of their
+/// super-traits, but repeating a dependency will still only
+/// require it to be provided once.
+/// 
+/// ## Example
+/// 
+/// ```
+/// #![recursion_limit="128"]
+/// use std::sync::Arc;
+/// 
+/// #[derive(Debug)]
+/// struct Foo;
+/// 
+/// aerosol::define_interface!(
+///     FooInterface {
+///         fn foo(&self) -> Arc<Foo>;
+///     }
+/// );
+/// 
+/// aerosol::define_interface!(
+///     TestInterface: FooInterface + Clone {}
+/// );
+/// ```
 
 #[macro_export(local_inner_macros)]
 macro_rules! define_interface {

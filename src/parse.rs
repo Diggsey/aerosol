@@ -1,3 +1,4 @@
+#[doc(hidden)]
 #[macro_export(local_inner_macros)]
 macro_rules! parse_bound {
     {
@@ -51,6 +52,7 @@ macro_rules! parse_bound {
     };
 }
 
+#[doc(hidden)]
 #[macro_export(local_inner_macros)]
 macro_rules! parse_trait_def {
     {

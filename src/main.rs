@@ -32,6 +32,7 @@ aerosol::define_interface!(
     }
 );
 
+#[allow(dead_code)]
 struct FooFactory;
 #[derive(Clone, Debug)]
 struct Foo;
