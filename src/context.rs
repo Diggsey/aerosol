@@ -22,7 +22,7 @@ macro_rules! private_define_context {
     {
         $caller:tt
         name = [{ $name:ident }]
-        $(auto_field = [{ $auto_field:ident, $auto_t:ty, $factory:ty }])*
+        $(auto_field = [{ $auto_field:ident, $auto_t:ty, $factory:ty, ($($f_args:ident,)*) }])*
         $(field = [{ $field:ident, $t:ty }])*
     } => {
         $crate::tt_call::tt_return! {
@@ -36,8 +36,11 @@ macro_rules! private_define_context {
 
                 impl $name {
                     fn new($($field: $t,)*) -> Result<Self, $crate::failure::Error> {
+                        $(
+                            let $auto_field = <$factory as $crate::Factory<_>>::build(($($f_args.clone(),)*))?;
+                        )*
                         Ok(Self {
-                            $($auto_field: <$factory as $crate::Factory>::build()?,)*
+                            $($auto_field,)*
                             $($field,)*
                         })
                     }
@@ -79,12 +82,40 @@ macro_rules! private_define_context {
         $caller:tt
         $(auto_field = [{ $($auto_field:tt)* }])*
         $(field = [{ $($field:tt)* }])*
+        rest = [{ $field_name:ident: $t:ty [ ($($f_args:ident),*) $factory:ty ], $($rest:tt)* }]
+    } => {
+        private_define_context! {
+            $caller
+            $(auto_field = [{ $($auto_field)* }])*
+            auto_field = [{ $field_name, $t, $factory, ($($f_args,)*) }]
+            $(field = [{ $($field)* }])*
+            rest = [{ $($rest)* }]
+        }
+    };
+    {
+        $caller:tt
+        $(auto_field = [{ $($auto_field:tt)* }])*
+        $(field = [{ $($field:tt)* }])*
+        rest = [{ $field_name:ident: $t:ty [ ($($f_args:ident),*) $factory:ty ] }]
+    } => {
+        private_define_context! {
+            $caller
+            $(auto_field = [{ $($auto_field)* }])*
+            auto_field = [{ $field_name, $t, $factory, ($($f_args,)*) }]
+            $(field = [{ $($field)* }])*
+            rest = [{ }]
+        }
+    };
+    {
+        $caller:tt
+        $(auto_field = [{ $($auto_field:tt)* }])*
+        $(field = [{ $($field:tt)* }])*
         rest = [{ $field_name:ident: $t:ty [ $factory:ty ], $($rest:tt)* }]
     } => {
         private_define_context! {
             $caller
             $(auto_field = [{ $($auto_field)* }])*
-            auto_field = [{ $field_name, $t, $factory }]
+            auto_field = [{ $field_name, $t, $factory, () }]
             $(field = [{ $($field)* }])*
             rest = [{ $($rest)* }]
         }
@@ -98,7 +129,7 @@ macro_rules! private_define_context {
         private_define_context! {
             $caller
             $(auto_field = [{ $($auto_field)* }])*
-            auto_field = [{ $field_name, $t, $factory }]
+            auto_field = [{ $field_name, $t, $factory, () }]
             $(field = [{ $($field)* }])*
             rest = [{ }]
         }
@@ -219,7 +250,7 @@ macro_rules! private_define_context {
 /// struct FooFactory;
 /// impl aerosol::Factory for FooFactory {
 ///     type Object = Arc<Foo>;
-///     fn build() -> Result<Arc<Foo>, failure::Error> { Ok(Arc::new(Foo)) }
+///     fn build(_: ()) -> Result<Arc<Foo>, failure::Error> { Ok(Arc::new(Foo)) }
 /// }
 /// 
 /// aerosol::define_context!(

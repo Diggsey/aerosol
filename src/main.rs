@@ -39,14 +39,14 @@ struct Foo;
 #[derive(Clone, Debug)]
 struct Bar;
 
-impl aerosol::Factory for FooFactory {
+impl aerosol::Factory<(Bar,)> for FooFactory {
     type Object = Foo;
-    fn build() -> Result<Foo, failure::Error> { Ok(Foo) }
+    fn build(_: (Bar,)) -> Result<Foo, failure::Error> { Ok(Foo) }
 }
 
 aerosol::define_context!(
     TestContext {
-        foo: Foo [FooFactory],
+        foo: Foo [(bar) FooFactory],
         bar: Bar
     }
 );

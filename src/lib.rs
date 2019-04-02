@@ -52,7 +52,7 @@
 //! struct StdoutLoggerFactory;
 //! impl aerosol::Factory for StdoutLoggerFactory {
 //!     type Object = Arc<Logger>;
-//!     fn build() -> Result<Arc<Logger>, failure::Error> {
+//!     fn build(_: ()) -> Result<Arc<Logger>, failure::Error> {
 //!         Ok(Arc::new(StdoutLogger))
 //!     }
 //! }
@@ -116,9 +116,9 @@ pub trait Provide<T> {
 
 /// Implement this trait to provide a convenient syntax for
 /// constructing implementations of dependencies.
-pub trait Factory {
+pub trait Factory<Args=()> {
     type Object;
-    fn build() -> Result<Self::Object, failure::Error>;
+    fn build(args: Args) -> Result<Self::Object, failure::Error>;
 }
 
 /// Allows cloning a context whilst replacing one dependency
