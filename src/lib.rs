@@ -98,6 +98,7 @@
 
 pub extern crate tt_call;
 pub extern crate failure;
+extern crate v0_2;
 
 mod join;
 mod parse;
@@ -110,9 +111,7 @@ mod context;
 /// 
 /// Super-trait of all interfaces requiring a dependency of type
 /// `T`.
-pub trait Provide<T> {
-    fn provide(&self) -> T;
-}
+pub use v0_2::Provide;
 
 /// Implement this trait to provide a convenient syntax for
 /// constructing implementations of dependencies.
@@ -124,6 +123,21 @@ pub trait Factory {
 /// Allows cloning a context whilst replacing one dependency
 /// with a different implementation. Must be explicitly listed
 /// as a super-trait of an interface to use.
-pub trait ProvideWith<T>: Provide<T> + Sized {
-    fn provide_with<E, F: FnOnce(T) -> Result<T, E>>(&self, f: F) -> Result<Self, E>;
+pub use v0_2::ProvideWith;
+
+/// Compatibility layer - allows using the newer `Factory` trait with the old `define_context` macro, or vice versa.
+pub struct FactoryAdaptor<T>(pub(crate) T);
+
+impl<T: v0_2::Factory> Factory for FactoryAdaptor<T> {
+    type Object = T::Object;
+    fn build() -> Result<Self::Object, failure::Error> {
+        T::build(())
+    }
+}
+
+impl<T: Factory> v0_2::Factory for FactoryAdaptor<T> {
+    type Object = T::Object;
+    fn build(_: ()) -> Result<Self::Object, failure::Error> {
+        T::build()
+    }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "aerosol"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Diggory Blake <diggsey@googlemail.com>"]
 edition = "2018"
 description = "Dependency injection with compile-time guarantees"
@@ -10,3 +10,4 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 tt-call = "1.0"
 failure = "0.1"
+v0_2 = { package = "aerosol", version = "0.2" }
