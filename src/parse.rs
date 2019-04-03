@@ -1,11 +1,11 @@
 #[doc(hidden)]
-#[macro_export(local_inner_macros)]
+#[macro_export]
 macro_rules! parse_bound {
     {
         $caller:tt
         input = [{ $($input:tt)* }]
     } => {
-        parse_bound! {
+        $crate::parse_bound! {
             $caller
             rest = [{ $($input)* }]
         }
@@ -18,7 +18,7 @@ macro_rules! parse_bound {
         $crate::tt_call::tt_call! {
             macro = [{ $crate::tt_call::parse_type }]
             input = [{ $($rest)* }]
-            ~~> parse_bound! {
+            ~~> $crate::parse_bound! {
                 $caller
                 $(bound = [{ $($bound)* }])*
             }
@@ -30,7 +30,7 @@ macro_rules! parse_bound {
         type = [{ $($type:tt)* }]
         rest = [{ + $($rest:tt)* }]
     } => {
-        parse_bound! {
+        $crate::parse_bound! {
             $caller
             $(bound = [{ $($bound)* }])*
             bound = [{ $($type)* }]
@@ -53,7 +53,7 @@ macro_rules! parse_bound {
 }
 
 #[doc(hidden)]
-#[macro_export(local_inner_macros)]
+#[macro_export]
 macro_rules! parse_trait_def {
     {
         $caller:tt
@@ -70,9 +70,9 @@ macro_rules! parse_trait_def {
         input = [{ $name:ident: $($rest:tt)* }]
     } => {
         $crate::tt_call::tt_call! {
-            macro = [{ parse_bound }]
+            macro = [{ $crate::parse_bound }]
             input = [{ $($rest)* }]
-            ~~> parse_trait_def! {
+            ~~> $crate::parse_trait_def! {
                 $caller
                 name = [{ $name }]
             }

@@ -96,7 +96,9 @@
 //! 
 //! See the individual macro documentation for more details.
 
+#[doc(hidden)]
 pub extern crate tt_call;
+#[doc(hidden)]
 pub extern crate failure;
 
 mod join;
