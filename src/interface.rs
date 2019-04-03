@@ -1,5 +1,5 @@
 #[doc(hidden)]
-#[macro_export(local_inner_macros)]
+#[macro_export]
 macro_rules! generate_trait_def {
     {
         $caller:tt
@@ -21,7 +21,7 @@ macro_rules! generate_trait_def {
 }
 
 #[doc(hidden)]
-#[macro_export(local_inner_macros)]
+#[macro_export]
 macro_rules! generate_trait_impl {
     {
         $caller:tt
@@ -45,16 +45,16 @@ macro_rules! generate_trait_impl {
 }
 
 #[doc(hidden)]
-#[macro_export(local_inner_macros)]
+#[macro_export]
 macro_rules! private_define_interface {
     {
         $caller:tt
         input = [{ $($input:tt)* }]
     } => {
         $crate::tt_call::tt_call! {
-            macro = [{ parse_trait_def }]
+            macro = [{ $crate::parse_trait_def }]
             input = [{ $($input)* }]
-            ~~> private_define_interface! {
+            ~~> $crate::private_define_interface! {
                 $caller
             }
         }
@@ -68,11 +68,11 @@ macro_rules! private_define_interface {
         $(bound = [{ $($bound:tt)* }])*
     } => {
         $crate::tt_call::tt_call! {
-            macro = [{ join }]
+            macro = [{ $crate::join }]
             sep = [{ + }]
             $(item = [{ $($bound)* }])*
             $(item = [{ $crate::Provide<$t> }])*
-            ~~> private_define_interface! {
+            ~~> $crate::private_define_interface! {
                 $caller
                 name = [{ $name }]
                 getters = [{ $(
@@ -88,11 +88,11 @@ macro_rules! private_define_interface {
         joined = [{ $($joined:tt)* }]
     } => {
         $crate::tt_call::tt_call! {
-            macro = [{ generate_trait_def }]
+            macro = [{ $crate::generate_trait_def }]
             name = [{ $name }]
             bounds = [{ $($joined)* }]
             getters = [{ $($getters)* }]
-            ~~> private_define_interface! {
+            ~~> $crate::private_define_interface! {
                 $caller
                 name = [{ $name }]
                 getters = [{ $($getters)* }]
@@ -108,11 +108,11 @@ macro_rules! private_define_interface {
         trait_def = [{ $($trait_def:tt)* }]
     } => {
         $crate::tt_call::tt_call! {
-            macro = [{ generate_trait_impl }]
+            macro = [{ $crate::generate_trait_impl }]
             name = [{ $name }]
             bounds = [{ $($bounds)* }]
             getters = [{ $($getters)* }]
-            ~~> private_define_interface! {
+            ~~> $crate::private_define_interface! {
                 $caller
                 trait_def = [{ $($trait_def)* }]
             }
@@ -181,11 +181,11 @@ macro_rules! private_define_interface {
 /// );
 /// ```
 
-#[macro_export(local_inner_macros)]
+#[macro_export]
 macro_rules! define_interface {
     ($($input:tt)*) => (
         $crate::tt_call::tt_call! {
-            macro = [{ private_define_interface }]
+            macro = [{ $crate::private_define_interface }]
             input = [{ $($input)* }]
         }
     );

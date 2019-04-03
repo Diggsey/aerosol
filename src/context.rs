@@ -1,6 +1,5 @@
-
 #[doc(hidden)]
-#[macro_export(local_inner_macros)]
+#[macro_export]
 macro_rules! private_define_context {
     {
         $caller:tt
@@ -11,9 +10,9 @@ macro_rules! private_define_context {
         }]
     } => {
         $crate::tt_call::tt_call! {
-            macro = [{ private_define_context }]
+            macro = [{ $crate::private_define_context }]
             rest = [{ $($body)* }]
-            ~~> private_define_context! {
+            ~~> $crate::private_define_context! {
                 $caller
                 name = [{ $name }]
             }
@@ -84,7 +83,7 @@ macro_rules! private_define_context {
         $(field = [{ $($field:tt)* }])*
         rest = [{ $field_name:ident: $t:ty [ ($($f_args:ident),*) $factory:ty ], $($rest:tt)* }]
     } => {
-        private_define_context! {
+        $crate::private_define_context! {
             $caller
             $(auto_field = [{ $($auto_field)* }])*
             auto_field = [{ $field_name, $t, $factory, ($($f_args,)*) }]
@@ -98,7 +97,7 @@ macro_rules! private_define_context {
         $(field = [{ $($field:tt)* }])*
         rest = [{ $field_name:ident: $t:ty [ ($($f_args:ident),*) $factory:ty ] }]
     } => {
-        private_define_context! {
+        $crate::private_define_context! {
             $caller
             $(auto_field = [{ $($auto_field)* }])*
             auto_field = [{ $field_name, $t, $factory, ($($f_args,)*) }]
@@ -112,7 +111,7 @@ macro_rules! private_define_context {
         $(field = [{ $($field:tt)* }])*
         rest = [{ $field_name:ident: $t:ty [ $factory:ty ], $($rest:tt)* }]
     } => {
-        private_define_context! {
+        $crate::private_define_context! {
             $caller
             $(auto_field = [{ $($auto_field)* }])*
             auto_field = [{ $field_name, $t, $factory, () }]
@@ -126,7 +125,7 @@ macro_rules! private_define_context {
         $(field = [{ $($field:tt)* }])*
         rest = [{ $field_name:ident: $t:ty [ $factory:ty ] }]
     } => {
-        private_define_context! {
+        $crate::private_define_context! {
             $caller
             $(auto_field = [{ $($auto_field)* }])*
             auto_field = [{ $field_name, $t, $factory, () }]
@@ -140,7 +139,7 @@ macro_rules! private_define_context {
         $(field = [{ $($field:tt)* }])*
         rest = [{ $field_name:ident: $t:ty, $($rest:tt)* }]
     } => {
-        private_define_context! {
+        $crate::private_define_context! {
             $caller
             $(auto_field = [{ $($auto_field)* }])*
             $(field = [{ $($field)* }])*
@@ -154,7 +153,7 @@ macro_rules! private_define_context {
         $(field = [{ $($field:tt)* }])*
         rest = [{ $field_name:ident: $t:ty }]
     } => {
-        private_define_context! {
+        $crate::private_define_context! {
             $caller
             $(auto_field = [{ $($auto_field)* }])*
             $(field = [{ $($field)* }])*
@@ -268,11 +267,11 @@ macro_rules! private_define_context {
 /// ```
 /// 
 /// 
-#[macro_export(local_inner_macros)]
+#[macro_export]
 macro_rules! define_context {
     ($($input:tt)*) => (
         $crate::tt_call::tt_call! {
-            macro = [{ private_define_context }]
+            macro = [{ $crate::private_define_context }]
             input = [{ $($input)* }]
         }
     );
