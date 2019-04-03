@@ -1,5 +1,5 @@
 #[doc(hidden)]
-#[macro_export(local_inner_macros)]
+#[macro_export]
 macro_rules! join {
     {
         $caller:tt
@@ -13,41 +13,44 @@ macro_rules! join {
     {
         $caller:tt
         sep = [{ $($sep:tt)* }]
-        item = [{ $($head:tt)* }]
-        $(
-            item = [{ $($tail:tt)* }]
-        )+
+        item = [{ $($first:tt)* }]
     } => {
-        $crate::tt_call::tt_call! {
-            macro = [{ $crate::join }]
-            sep = [{ $($sep)* }]
-            $(
-                item = [{ $($tail)* }]
-            )+
-            ~~> $crate::join! {
-                $caller
-                prepend = [{ $($head)* $($sep)* }]
-            }
+        $crate::tt_call::tt_return! {
+            $caller
+            joined = [{ $($first)* }]
         }
     };
     {
         $caller:tt
         sep = [{ $($sep:tt)* }]
-        item = [{ $($head:tt)* }]
+        item = [{ $($first:tt)* }]
+        item = [{ $($second:tt)* }]
+        $(
+            item = [{ $($rest:tt)* }]
+        )*
     } => {
-        $crate::tt_call::tt_return! {
+        $crate::join! {
             $caller
-            joined = [{ $($head)* }]
+            sep = [{ $($sep)* }]
+            item = [{ $($first)* $($sep)* $($second)* }]
+            $(
+                item = [{ $($rest)* }]
+            )*
         }
     };
-    {
-        $caller:tt
-        prepend = [{ $($prepend:tt)* }]
-        joined = [{ $($joined:tt)* }]
-    } => {
-        $crate::tt_call::tt_return! {
-            $caller
-            joined = [{ $($prepend)* $($joined)* }]
-        }
+}
+
+#[test]
+fn test_join() {
+    use tt_call::*;
+
+    let s = tt_call! {
+        macro = [{ join }]
+        sep = [{ .chars().rev().collect::<String>() + "_" + & }]
+        item = [{ "first   " }]
+        item = [{ "second  ".trim() }]
+        item = [{ "third   " }]
     };
+
+    assert_eq!(s, "   tsrif_dnoces_third   ");
 }
