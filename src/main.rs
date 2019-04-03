@@ -1,5 +1,4 @@
 #![recursion_limit="512"]
-#![feature(trace_macros)]
 
 extern crate aerosol;
 #[macro_use]
