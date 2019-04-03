@@ -1,4 +1,4 @@
-# aerosol
+# aerosol [![Build Status](https://travis-ci.com/Diggsey/aerosol.svg?branch=master)](https://travis-ci.com/Diggsey/aerosol)
 
 Simple dependency injection for Rust
 
