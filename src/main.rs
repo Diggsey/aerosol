@@ -1,4 +1,5 @@
-#![recursion_limit="512"]
+#![recursion_limit = "512"]
+#![allow(clippy::blacklisted_name)]
 
 extern crate aerosol;
 #[macro_use]
@@ -39,7 +40,9 @@ struct Bar;
 
 impl aerosol::Factory<(Bar,)> for FooFactory {
     type Object = Foo;
-    fn build(_: (Bar,)) -> Result<Foo, anyhow::Error> { Ok(Foo) }
+    fn build(_: (Bar,)) -> Result<Foo, anyhow::Error> {
+        Ok(Foo)
+    }
 }
 
 aerosol::define_context!(
@@ -50,7 +53,6 @@ aerosol::define_context!(
 );
 
 fn main() {
-
     //trace_macros!(true);
     //aerosol::test_macro!();
     tt_call! {
