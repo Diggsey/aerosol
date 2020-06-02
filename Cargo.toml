@@ -9,4 +9,4 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 tt-call = "1.0"
-failure = "0.1"
+anyhow = "1"

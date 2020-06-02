@@ -32,7 +32,6 @@
 //! #![recursion_limit="128"]
 //! use std::sync::Arc;
 //! use std::fmt::Debug;
-//! use failure;
 //! 
 //! // We will depend on some kind of logger
 //! trait Logger: Debug {
@@ -52,7 +51,7 @@
 //! struct StdoutLoggerFactory;
 //! impl aerosol::Factory for StdoutLoggerFactory {
 //!     type Object = Arc<Logger>;
-//!     fn build(_: ()) -> Result<Arc<Logger>, failure::Error> {
+//!     fn build(_: ()) -> Result<Arc<Logger>, anyhow::Error> {
 //!         Ok(Arc::new(StdoutLogger))
 //!     }
 //! }
@@ -87,19 +86,15 @@
 //!     }
 //! );
 //! 
-//! fn main() {
-//!     let context = AppContext::new().unwrap();
+//! let context = AppContext::new().unwrap();
 //! 
-//!     run_app(context, 4);
-//! }
+//! run_app(context, 4);
 //! ```
 //! 
 //! See the individual macro documentation for more details.
 
 #[doc(hidden)]
 pub extern crate tt_call;
-#[doc(hidden)]
-pub extern crate failure;
 
 mod join;
 mod parse;
@@ -120,7 +115,7 @@ pub trait Provide<T> {
 /// constructing implementations of dependencies.
 pub trait Factory<Args=()> {
     type Object;
-    fn build(args: Args) -> Result<Self::Object, failure::Error>;
+    fn build(args: Args) -> Result<Self::Object, anyhow::Error>;
 }
 
 /// Allows cloning a context whilst replacing one dependency
