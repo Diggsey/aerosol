@@ -1,4 +1,4 @@
-# aerosol [![Build Status](https://travis-ci.com/Diggsey/aerosol.svg?branch=master)](https://travis-ci.com/Diggsey/aerosol)
+# aerosol [![GHA Build Status](https://github.com/Diggsey/aerosol/workflows/CI/badge.svg)](https://github.com/Diggsey/aerosol/actions?query=workflow%3ACI)
 
 Simple dependency injection for Rust
 
