@@ -34,7 +34,7 @@ macro_rules! private_define_context {
                 }
 
                 impl $name {
-                    fn new($($field: $t,)*) -> Result<Self, $crate::failure::Error> {
+                    fn new($($field: $t,)*) -> Result<Self, anyhow::Error> {
                         $(
                             let $auto_field = <$factory as $crate::Factory<_>>::build(($($f_args.clone(),)*))?;
                         )*
@@ -239,7 +239,6 @@ macro_rules! private_define_context {
 /// 
 /// ```
 /// use std::sync::Arc;
-/// use failure;
 /// 
 /// #[derive(Debug)]
 /// struct Foo;
@@ -249,7 +248,7 @@ macro_rules! private_define_context {
 /// struct FooFactory;
 /// impl aerosol::Factory for FooFactory {
 ///     type Object = Arc<Foo>;
-///     fn build(_: ()) -> Result<Arc<Foo>, failure::Error> { Ok(Arc::new(Foo)) }
+///     fn build(_: ()) -> Result<Arc<Foo>, anyhow::Error> { Ok(Arc::new(Foo)) }
 /// }
 /// 
 /// aerosol::define_context!(

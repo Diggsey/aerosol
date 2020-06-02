@@ -3,7 +3,6 @@
 extern crate aerosol;
 #[macro_use]
 extern crate tt_call;
-extern crate failure;
 
 #[macro_export]
 macro_rules! tt_debug2 {
@@ -40,7 +39,7 @@ struct Bar;
 
 impl aerosol::Factory<(Bar,)> for FooFactory {
     type Object = Foo;
-    fn build(_: (Bar,)) -> Result<Foo, failure::Error> { Ok(Foo) }
+    fn build(_: (Bar,)) -> Result<Foo, anyhow::Error> { Ok(Foo) }
 }
 
 aerosol::define_context!(
