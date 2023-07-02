@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -12,11 +12,20 @@ use crate::{
 /// Implemented for values which can be constructed asynchronously from other
 /// resources. Requires feature `async`.
 #[async_trait]
-pub trait AsyncConstructible: Sized {
+pub trait AsyncConstructible: Sized + Any + Send + Sync {
     /// Error type for when resource fails to be constructed.
     type Error: Into<anyhow::Error> + Send + Sync;
     /// Construct the resource with the provided application state.
     async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error>;
+    /// Called after construction with the concrete resource to allow the callee
+    /// to provide additional resources. Can be used by eg. an `Arc<Foo>` to also
+    /// provide an implementation of `Arc<dyn Bar>`.
+    async fn after_construction_async(
+        _this: &(dyn Any + Send + Sync),
+        _aero: &Aerosol,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -25,16 +34,31 @@ impl<T: Constructible> AsyncConstructible for T {
     async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error> {
         Self::construct(aero)
     }
+    async fn after_construction_async(
+        this: &(dyn Any + Send + Sync),
+        aero: &Aerosol,
+    ) -> Result<(), Self::Error> {
+        Self::after_construction(this, aero)
+    }
 }
 
 /// Automatically implemented for values which can be indirectly asynchronously constructed from other resources.
 /// Requires feature `async`.
 #[async_trait]
-pub trait IndirectlyAsyncConstructible: Sized {
+pub trait IndirectlyAsyncConstructible: Sized + Any + Send + Sync {
     /// Error type for when resource fails to be constructed.
     type Error: Into<anyhow::Error> + Send + Sync;
     /// Construct the resource with the provided application state.
     async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error>;
+    /// Called after construction with the concrete resource to allow the callee
+    /// to provide additional resources. Can be used by eg. an `Arc<Foo>` to also
+    /// provide an implementation of `Arc<dyn Bar>`.
+    async fn after_construction_async(
+        _this: &(dyn Any + Send + Sync),
+        _aero: &Aerosol,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -42,7 +66,15 @@ impl<T: AsyncConstructible> IndirectlyAsyncConstructible for T {
     type Error = T::Error;
 
     async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error> {
-        T::construct_async(aero).await
+        let res = <T as AsyncConstructible>::construct_async(aero).await?;
+        <T as AsyncConstructible>::after_construction_async(&res, aero).await?;
+        Ok(res)
+    }
+    async fn after_construction_async(
+        this: &(dyn Any + Send + Sync),
+        aero: &Aerosol,
+    ) -> Result<(), Self::Error> {
+        <T as AsyncConstructible>::after_construction_async(this, aero).await
     }
 }
 
@@ -54,7 +86,13 @@ macro_rules! impl_async_constructible {
                 type Error = $t::Error;
 
                 async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error> {
-                    $t::construct_async(aero).await.map($y)
+                    let res = $y($t::construct_async(aero).await?);
+                    <$t as IndirectlyAsyncConstructible>::after_construction_async(&res, aero).await?;
+                    Ok(res)
+                }
+
+                async fn after_construction_async(this: &(dyn Any + Send + Sync), aero: &Aerosol) -> Result<(), Self::Error> {
+                    <$t as IndirectlyAsyncConstructible>::after_construction_async(this, aero).await
                 }
             }
         )*
@@ -270,5 +308,38 @@ mod tests {
     async fn obtain_non_clone() {
         let state = Aerosol::new();
         state.obtain_async::<Arc<DummyNonClone>>().await;
+    }
+
+    trait DummyTrait: Send + Sync {}
+
+    #[derive(Debug)]
+    struct DummyImpl;
+
+    impl DummyTrait for DummyImpl {}
+
+    #[async_trait]
+    impl AsyncConstructible for DummyImpl {
+        type Error = Infallible;
+
+        async fn construct_async(_app_state: &Aerosol) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+
+        async fn after_construction_async(
+            this: &(dyn Any + Send + Sync),
+            aero: &Aerosol,
+        ) -> Result<(), Self::Error> {
+            if let Some(arc) = this.downcast_ref::<Arc<Self>>() {
+                aero.insert(arc.clone() as Arc<dyn DummyTrait>)
+            }
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn obtain_impl() {
+        let state = Aerosol::new();
+        state.init_async::<Arc<DummyImpl>>().await;
+        state.get_async::<Arc<dyn DummyTrait>>().await;
     }
 }
