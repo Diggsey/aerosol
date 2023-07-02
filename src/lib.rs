@@ -29,7 +29,9 @@ mod sync_constructible;
 pub use resource::Resource;
 pub use state::Aerosol;
 
-pub use sync_constructible::ConstructibleResource;
+pub use sync_constructible::{Constructible, ConstructibleResource, IndirectlyConstructible};
 
 #[cfg(feature = "async")]
-pub use async_constructible::AsyncConstructibleResource;
+pub use async_constructible::{
+    AsyncConstructible, AsyncConstructibleResource, IndirectlyAsyncConstructible,
+};
