@@ -1,7 +1,4 @@
-use std::{
-    any::{type_name, Any},
-    error::Error,
-};
+use std::any::{type_name, Any};
 
 /// Bound on the types that can be used as an aerosol resource.
 pub trait Resource: Any + Send + Sync + Clone {}
@@ -15,10 +12,10 @@ pub(crate) fn unwrap_resource<T: Resource>(opt: Option<T>) -> T {
     }
 }
 
-pub(crate) fn unwrap_constructed<T: Resource, U>(res: Result<U, impl Error>) -> U {
+pub(crate) fn unwrap_constructed<T: Resource, U>(res: Result<U, impl Into<anyhow::Error>>) -> U {
     match res {
         Ok(x) => x,
-        Err(e) => panic!("Failed to construct `{}`: {}", type_name::<T>(), e),
+        Err(e) => panic!("Failed to construct `{}`: {}", type_name::<T>(), e.into()),
     }
 }
 

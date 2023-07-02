@@ -1,6 +1,6 @@
 [package]
 name = "aerosol"
-version = "1.0.0-alpha.3"
+version = "1.0.0-alpha.4"
 authors = ["Diggory Blake <diggsey@googlemail.com>"]
 edition = "2018"
 description = "Simple dependency injection for Rust"
@@ -13,7 +13,7 @@ all-features = true
 [features]
 default = []
 async = ["async-trait"]
-axum = ["dep:axum", "async", "tracing", "thiserror", "anyhow"]
+axum = ["dep:axum", "async", "tracing", "thiserror"]
 
 [dependencies]
 parking_lot = "0.12.1"
@@ -22,7 +22,7 @@ async-trait = { version = "0.1", optional = true }
 axum = { version = "0.6", optional = true }
 tracing = { version = "0.1", optional = true }
 thiserror = { version = "1.0", optional = true }
-anyhow = { version = "1.0", optional = true }
+anyhow = { version = "1.0" }
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["macros"] }

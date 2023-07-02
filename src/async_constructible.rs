@@ -1,4 +1,4 @@
-use std::{error::Error, sync::Arc};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
@@ -14,7 +14,7 @@ use crate::{
 #[async_trait]
 pub trait AsyncConstructible: Sized {
     /// Error type for when resource fails to be constructed.
-    type Error: Error + Send + Sync;
+    type Error: Into<anyhow::Error> + Send + Sync;
     /// Construct the resource with the provided application state.
     async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error>;
 }
@@ -32,7 +32,7 @@ impl<T: Constructible> AsyncConstructible for T {
 #[async_trait]
 pub trait IndirectlyAsyncConstructible: Sized {
     /// Error type for when resource fails to be constructed.
-    type Error: Error + Send + Sync;
+    type Error: Into<anyhow::Error> + Send + Sync;
     /// Construct the resource with the provided application state.
     async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error>;
 }

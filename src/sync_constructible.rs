@@ -1,4 +1,4 @@
-use std::{error::Error, sync::Arc};
+use std::sync::Arc;
 
 use crate::{
     resource::{unwrap_constructed, Resource},
@@ -9,7 +9,7 @@ use crate::{
 /// Implemented for values which can be constructed from other resources.
 pub trait Constructible: Sized {
     /// Error type for when resource fails to be constructed.
-    type Error: Error + Send + Sync;
+    type Error: Into<anyhow::Error> + Send + Sync;
     /// Construct the resource with the provided application state.
     fn construct(aero: &Aerosol) -> Result<Self, Self::Error>;
 }
@@ -17,7 +17,7 @@ pub trait Constructible: Sized {
 /// Automatically implemented for values which can be indirectly constructed from other resources.
 pub trait IndirectlyConstructible: Sized {
     /// Error type for when resource fails to be constructed.
-    type Error: Error + Send + Sync;
+    type Error: Into<anyhow::Error> + Send + Sync;
     /// Construct the resource with the provided application state.
     fn construct(aero: &Aerosol) -> Result<Self, Self::Error>;
 }
