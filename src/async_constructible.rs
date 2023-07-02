@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -6,13 +6,13 @@ use crate::{
     resource::{unwrap_constructed, Resource},
     slot::SlotDesc,
     state::Aerosol,
-    ConstructibleResource,
+    sync_constructible::Constructible,
 };
 
-/// Implemented for resources which can be constructed asynchronously from other
+/// Implemented for values which can be constructed asynchronously from other
 /// resources. Requires feature `async`.
 #[async_trait]
-pub trait AsyncConstructibleResource: Resource {
+pub trait AsyncConstructible: Sized {
     /// Error type for when resource fails to be constructed.
     type Error: Error + Send + Sync;
     /// Construct the resource with the provided application state.
@@ -20,12 +20,58 @@ pub trait AsyncConstructibleResource: Resource {
 }
 
 #[async_trait]
-impl<T: ConstructibleResource> AsyncConstructibleResource for T {
-    type Error = <T as ConstructibleResource>::Error;
+impl<T: Constructible> AsyncConstructible for T {
+    type Error = <T as Constructible>::Error;
     async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error> {
         Self::construct(aero)
     }
 }
+
+/// Automatically implemented for values which can be indirectly asynchronously constructed from other resources.
+/// Requires feature `async`.
+#[async_trait]
+pub trait IndirectlyAsyncConstructible: Sized {
+    /// Error type for when resource fails to be constructed.
+    type Error: Error + Send + Sync;
+    /// Construct the resource with the provided application state.
+    async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error>;
+}
+
+#[async_trait]
+impl<T: AsyncConstructible> IndirectlyAsyncConstructible for T {
+    type Error = T::Error;
+
+    async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error> {
+        T::construct_async(aero).await
+    }
+}
+
+macro_rules! impl_async_constructible {
+    (<$t:ident>; $($x:ty: $y:expr;)*) => {
+        $(
+            #[async_trait]
+            impl<$t: IndirectlyAsyncConstructible> IndirectlyAsyncConstructible for $x {
+                type Error = $t::Error;
+
+                async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error> {
+                    $t::construct_async(aero).await.map($y)
+                }
+            }
+        )*
+    };
+}
+impl_async_constructible! {
+    <T>;
+    Arc<T>: Arc::new;
+    std::sync::Mutex<T>: std::sync::Mutex::new;
+    parking_lot::Mutex<T>: parking_lot::Mutex::new;
+    std::sync::RwLock<T>: std::sync::RwLock::new;
+    parking_lot::RwLock<T>: parking_lot::RwLock::new;
+}
+
+/// Implemented for resources which can be asynchronously constructed from other resources. Requires feature `async`.
+pub trait AsyncConstructibleResource: Resource + IndirectlyAsyncConstructible {}
+impl<T: Resource + IndirectlyAsyncConstructible> AsyncConstructibleResource for T {}
 
 impl Aerosol {
     /// Try to get or construct an instance of `T` asynchronously. Requires feature `async`.
@@ -49,7 +95,27 @@ impl Aerosol {
     }
     /// Get or construct an instance of `T` asynchronously. Panics if unable. Requires feature `async`.
     pub async fn obtain_async<T: AsyncConstructibleResource>(&self) -> T {
-        unwrap_constructed(self.try_obtain_async::<T>().await)
+        unwrap_constructed::<T, _>(self.try_obtain_async::<T>().await)
+    }
+    /// Try to initialize an instance of `T` asynchronously. Does nothing if `T` is already initialized.
+    pub async fn try_init_async<T: AsyncConstructibleResource>(&self) -> Result<(), T::Error> {
+        match self.wait_for_slot_async::<T>(true).await {
+            Some(_) => Ok(()),
+            None => match T::construct_async(self).await {
+                Ok(x) => {
+                    self.fill_placeholder::<T>(x);
+                    Ok(())
+                }
+                Err(e) => {
+                    self.clear_placeholder::<T>();
+                    Err(e)
+                }
+            },
+        }
+    }
+    /// Initialize an instance of `T` asynchronously. Does nothing if `T` is already initialized. Panics if unable.
+    pub async fn init_async<T: AsyncConstructibleResource>(&self) {
+        unwrap_constructed::<T, _>(self.try_init_async::<T>().await)
     }
 }
 
@@ -63,7 +129,7 @@ mod tests {
     struct Dummy;
 
     #[async_trait]
-    impl AsyncConstructibleResource for Dummy {
+    impl AsyncConstructible for Dummy {
         type Error = Infallible;
 
         async fn construct_async(_app_state: &Aerosol) -> Result<Self, Self::Error> {
@@ -97,7 +163,7 @@ mod tests {
     struct DummyRecursive;
 
     #[async_trait]
-    impl AsyncConstructibleResource for DummyRecursive {
+    impl AsyncConstructible for DummyRecursive {
         type Error = Infallible;
 
         async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error> {
@@ -128,7 +194,7 @@ mod tests {
     struct DummyCyclic;
 
     #[async_trait]
-    impl AsyncConstructibleResource for DummyCyclic {
+    impl AsyncConstructible for DummyCyclic {
         type Error = Infallible;
 
         async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error> {
@@ -147,7 +213,7 @@ mod tests {
     #[derive(Debug, Clone)]
     struct DummySync;
 
-    impl ConstructibleResource for DummySync {
+    impl Constructible for DummySync {
         type Error = Infallible;
 
         fn construct(_app_state: &Aerosol) -> Result<Self, Self::Error> {
@@ -160,7 +226,7 @@ mod tests {
     struct DummySyncRecursive;
 
     #[async_trait]
-    impl AsyncConstructibleResource for DummySyncRecursive {
+    impl AsyncConstructible for DummySyncRecursive {
         type Error = Infallible;
 
         async fn construct_async(aero: &Aerosol) -> Result<Self, Self::Error> {
@@ -185,5 +251,24 @@ mod tests {
                 state.obtain_async::<DummySyncRecursive>().await;
             }));
         }
+    }
+
+    #[derive(Debug)]
+    struct DummyNonClone;
+
+    #[async_trait]
+    impl AsyncConstructible for DummyNonClone {
+        type Error = Infallible;
+
+        async fn construct_async(_app_state: &Aerosol) -> Result<Self, Self::Error> {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            Ok(Self)
+        }
+    }
+
+    #[tokio::test]
+    async fn obtain_non_clone() {
+        let state = Aerosol::new();
+        state.obtain_async::<Arc<DummyNonClone>>().await;
     }
 }

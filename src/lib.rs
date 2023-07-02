@@ -2,16 +2,16 @@
 //! # aerosol
 //! Simple dependency injection for Rust
 //!
-//! Optional features: `async`
+//! Optional features:
 //!
 //! ## `async`
 //!
-//! Allows resources to be constructed asynchrously, and provies a corresponding
+//! Allows resources to be constructed asynchrously, and provides a corresponding
 //! `AsyncConstructibleResource` trait.
 //!
 //! ## `axum`
 //!
-//! Provies integrations with the `axum` web framework. See the `axum` module
+//! Provides integrations with the `axum` web framework. See the `axum` module
 //! for more information.
 
 #[cfg(feature = "async")]

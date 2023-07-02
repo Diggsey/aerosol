@@ -14,7 +14,7 @@ struct InnerAerosol {
 }
 
 /// Stores a collection of resources keyed on resource type.
-/// Provies methods for accessing this collection.
+/// Provides methods for accessing this collection.
 /// Can be cheaply cloned.
 #[derive(Debug, Clone, Default)]
 pub struct Aerosol {

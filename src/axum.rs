@@ -1,6 +1,6 @@
 //! Integration with the `axum` web framework.
 //!
-//! Provies the `Dep` and `Obtain` axum extractors for easily accessing
+//! Provides the `Dep` and `Obtain` axum extractors for easily accessing
 //! resources from within route handlers.
 //!
 //! To make use of these extractors, your application state must either be
