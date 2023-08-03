@@ -1,5 +1,7 @@
 use std::{any::Any, sync::Arc};
 
+use frunk::prelude::HList;
+
 use crate::{
     resource::{unwrap_constructed, Resource},
     slot::SlotDesc,
@@ -90,14 +92,14 @@ impl_constructible! {
 pub trait ConstructibleResource: Resource + IndirectlyConstructible {}
 impl<T: Resource + IndirectlyConstructible> ConstructibleResource for T {}
 
-impl Aerosol {
+impl<R: HList> Aerosol<R> {
     /// Try to get or construct an instance of `T`.
     pub fn try_obtain<T: ConstructibleResource>(&self) -> Result<T, T::Error> {
         match self.try_get_slot() {
             Some(SlotDesc::Filled(x)) => Ok(x),
             Some(SlotDesc::Placeholder) | None => match self.wait_for_slot::<T>(true) {
                 Some(x) => Ok(x),
-                None => match T::construct(self) {
+                None => match T::construct(self.as_ref()) {
                     Ok(x) => {
                         self.fill_placeholder::<T>(x.clone());
                         Ok(x)
@@ -118,7 +120,7 @@ impl Aerosol {
     pub fn try_init<T: ConstructibleResource>(&self) -> Result<(), T::Error> {
         match self.wait_for_slot::<T>(true) {
             Some(_) => Ok(()),
-            None => match T::construct(self) {
+            None => match T::construct(self.as_ref()) {
                 Ok(x) => {
                     self.fill_placeholder::<T>(x);
                     Ok(())
@@ -264,6 +266,6 @@ mod tests {
     fn obtain_impl() {
         let state = Aerosol::new();
         state.init::<Arc<DummyImpl>>();
-        state.get::<Arc<dyn DummyTrait>>();
+        state.try_get::<Arc<dyn DummyTrait>>().unwrap();
     }
 }

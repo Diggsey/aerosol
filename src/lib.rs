@@ -13,6 +13,7 @@
 //!
 //! Provides integrations with the `axum` web framework. See the `axum` module
 //! for more information.
+pub use frunk;
 
 #[cfg(feature = "async")]
 mod async_;
@@ -20,6 +21,7 @@ mod async_;
 mod async_constructible;
 #[cfg(feature = "axum")]
 pub mod axum;
+mod macros;
 mod resource;
 mod slot;
 mod state;

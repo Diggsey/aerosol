@@ -1,5 +1,7 @@
 use std::{task::Poll, thread};
 
+use frunk::{hlist::Plucker, prelude::HList};
+
 use crate::{
     resource::{unwrap_resource, Resource},
     slot::SlotDesc,
@@ -16,7 +18,7 @@ pub fn safe_park() {
     std::thread::park();
 }
 
-impl Aerosol {
+impl<R: HList> Aerosol<R> {
     /// Synchronously wait for the slot for `T` to not have a placeholder.
     /// Returns immediately if there is no `T` present, or if `T`'s slot is filled.
     pub(crate) fn wait_for_slot<T: Resource>(&self, insert_placeholder: bool) -> Option<T> {
@@ -37,9 +39,11 @@ impl Aerosol {
             SlotDesc::Placeholder => self.wait_for_slot::<T>(false),
         }
     }
-    /// Get an instance of `T` from the AppState, and panic if not found.
-    /// This function does not attempt to construct `T` if it does not exist.
-    pub fn get<T: Resource>(&self) -> T {
+    /// Get an instance of `T` from the AppState which is statically known to be present.
+    pub fn get<T: Resource, I>(&self) -> T
+    where
+        R: Plucker<T, I>,
+    {
         unwrap_resource(self.try_get())
     }
 }
@@ -51,14 +55,7 @@ mod tests {
     #[test]
     fn get_with() {
         let state = Aerosol::new().with(42);
-        assert_eq!(state.get::<i32>(), 42);
-    }
-
-    #[test]
-    fn get_inserted() {
-        let state = Aerosol::new();
-        state.insert(42);
-        assert_eq!(state.get::<i32>(), 42);
+        assert_eq!(state.get::<i32, _>(), 42);
     }
 
     #[test]

@@ -1,6 +1,7 @@
 use std::{any::Any, sync::Arc};
 
 use async_trait::async_trait;
+use frunk::prelude::HList;
 
 use crate::{
     resource::{unwrap_constructed, Resource},
@@ -111,14 +112,14 @@ impl_async_constructible! {
 pub trait AsyncConstructibleResource: Resource + IndirectlyAsyncConstructible {}
 impl<T: Resource + IndirectlyAsyncConstructible> AsyncConstructibleResource for T {}
 
-impl Aerosol {
+impl<R: HList> Aerosol<R> {
     /// Try to get or construct an instance of `T` asynchronously. Requires feature `async`.
     pub async fn try_obtain_async<T: AsyncConstructibleResource>(&self) -> Result<T, T::Error> {
         match self.try_get_slot() {
             Some(SlotDesc::Filled(x)) => Ok(x),
             Some(SlotDesc::Placeholder) | None => match self.wait_for_slot_async::<T>(true).await {
                 Some(x) => Ok(x),
-                None => match T::construct_async(self).await {
+                None => match T::construct_async(self.as_ref()).await {
                     Ok(x) => {
                         self.fill_placeholder::<T>(x.clone());
                         Ok(x)
@@ -139,7 +140,7 @@ impl Aerosol {
     pub async fn try_init_async<T: AsyncConstructibleResource>(&self) -> Result<(), T::Error> {
         match self.wait_for_slot_async::<T>(true).await {
             Some(_) => Ok(()),
-            None => match T::construct_async(self).await {
+            None => match T::construct_async(self.as_ref()).await {
                 Ok(x) => {
                     self.fill_placeholder::<T>(x);
                     Ok(())
@@ -340,6 +341,6 @@ mod tests {
     async fn obtain_impl() {
         let state = Aerosol::new();
         state.init_async::<Arc<DummyImpl>>().await;
-        state.get_async::<Arc<dyn DummyTrait>>().await;
+        state.try_get_async::<Arc<dyn DummyTrait>>().await.unwrap();
     }
 }
