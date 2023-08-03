@@ -1,11 +1,11 @@
 use std::{task::Poll, thread};
 
-use frunk::{hlist::Plucker, prelude::HList};
+use frunk::hlist::Plucker;
 
 use crate::{
-    resource::{unwrap_resource, Resource},
+    resource::{unwrap_resource, Resource, ResourceList},
     slot::SlotDesc,
-    state::Aerosol,
+    state::Aero,
 };
 
 #[cfg(target_family = "wasm")]
@@ -18,7 +18,7 @@ pub fn safe_park() {
     std::thread::park();
 }
 
-impl<R: HList> Aerosol<R> {
+impl<R: ResourceList> Aero<R> {
     /// Synchronously wait for the slot for `T` to not have a placeholder.
     /// Returns immediately if there is no `T` present, or if `T`'s slot is filled.
     pub(crate) fn wait_for_slot<T: Resource>(&self, insert_placeholder: bool) -> Option<T> {
@@ -54,19 +54,19 @@ mod tests {
 
     #[test]
     fn get_with() {
-        let state = Aerosol::new().with(42);
+        let state = Aero::new().with(42);
         assert_eq!(state.get::<i32, _>(), 42);
     }
 
     #[test]
     fn try_get_some() {
-        let state = Aerosol::new().with(42);
+        let state = Aero::new().with(42);
         assert_eq!(state.try_get::<i32>(), Some(42));
     }
 
     #[test]
     fn try_get_none() {
-        let state = Aerosol::new().with("Hello");
+        let state = Aero::new().with("Hello");
         assert_eq!(state.try_get::<i32>(), None);
     }
 }

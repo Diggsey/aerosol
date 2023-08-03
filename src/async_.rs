@@ -5,18 +5,20 @@ use std::{
     task::{Context, Poll},
 };
 
-use frunk::prelude::HList;
+use crate::{
+    resource::{Resource, ResourceList},
+    slot::SlotDesc,
+    state::Aero,
+};
 
-use crate::{resource::Resource, slot::SlotDesc, state::Aerosol};
-
-pub(crate) struct WaitForSlot<R: HList, T: Resource> {
-    state: Aerosol<R>,
+pub(crate) struct WaitForSlot<R: ResourceList, T: Resource> {
+    state: Aero<R>,
     wait_index: Option<usize>,
     insert_placeholder: bool,
     phantom: PhantomData<fn() -> T>,
 }
 
-impl<R: HList, T: Resource> Future for WaitForSlot<R, T> {
+impl<R: ResourceList, T: Resource> Future for WaitForSlot<R, T> {
     type Output = Option<T>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -26,7 +28,7 @@ impl<R: HList, T: Resource> Future for WaitForSlot<R, T> {
     }
 }
 
-impl<R: HList> Aerosol<R> {
+impl<R: ResourceList> Aero<R> {
     pub(crate) fn wait_for_slot_async<T: Resource>(
         &self,
         insert_placeholder: bool,
@@ -54,13 +56,13 @@ mod tests {
 
     #[tokio::test]
     async fn try_get_some() {
-        let state = Aerosol::new().with(42);
+        let state = Aero::new().with(42);
         assert_eq!(state.try_get_async::<i32>().await, Some(42));
     }
 
     #[tokio::test]
     async fn try_get_none() {
-        let state = Aerosol::new().with("Hello");
+        let state = Aero::new().with("Hello");
         assert_eq!(state.try_get_async::<i32>().await, None);
     }
 }

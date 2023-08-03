@@ -3,18 +3,17 @@ use std::{any::Any, marker::PhantomData, sync::Arc, task::Poll};
 use anymap::hashbrown::{Entry, Map};
 use frunk::{
     hlist::{HFoldRightable, Sculptor},
-    prelude::HList,
     HCons, HNil, Poly,
 };
 use parking_lot::RwLock;
 
 use crate::{
-    resource::{cyclic_resource, duplicate_resource, Resource},
+    resource::{cyclic_resource, duplicate_resource, missing_resource, Resource, ResourceList},
     slot::{Slot, SlotDesc, ThreadOrWaker},
 };
 
 #[derive(Debug, Default)]
-struct InnerAerosol {
+pub(crate) struct InnerAero {
     items: Map<dyn Any + Send + Sync>,
 }
 
@@ -23,12 +22,12 @@ struct InnerAerosol {
 /// Can be cheaply cloned.
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct Aerosol<R: HList = HNil> {
-    inner: Arc<RwLock<InnerAerosol>>,
-    phantom: PhantomData<Arc<R>>,
+pub struct Aero<R: ResourceList = HNil> {
+    pub(crate) inner: Arc<RwLock<InnerAero>>,
+    pub(crate) phantom: PhantomData<Arc<R>>,
 }
 
-impl Aerosol {
+impl Aero {
     /// Construct a new instance of the type with no initial resources.
     pub fn new() -> Self {
         Self {
@@ -38,7 +37,7 @@ impl Aerosol {
     }
 }
 
-impl<R: HList> Clone for Aerosol<R> {
+impl<R: ResourceList> Clone for Aero<R> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -47,41 +46,24 @@ impl<R: HList> Clone for Aerosol<R> {
     }
 }
 
-struct AerosolBuilderFolder;
-impl<R: HList, T: Resource> frunk::Func<(Aerosol<R>, T)> for AerosolBuilderFolder {
-    type Output = Aerosol<HCons<T, R>>;
-    fn call((aero, value): (Aerosol<R>, T)) -> Self::Output {
+struct AerosolDefaultFolder;
+impl<R: ResourceList, T: Resource> frunk::Func<(Aero<R>, T)> for AerosolDefaultFolder {
+    type Output = Aero<HCons<T, R>>;
+    fn call((aero, value): (Aero<R>, T)) -> Self::Output {
         aero.with(value)
     }
 }
 
-#[doc(hidden)]
-pub trait HTestable {
-    fn test<R: HList>(aero: &Aerosol<R>) -> bool;
-}
-
-impl HTestable for HNil {
-    fn test<R: HList>(_aero: &Aerosol<R>) -> bool {
-        true
-    }
-}
-
-impl<H: Resource, T: HTestable> HTestable for HCons<H, T> {
-    fn test<R: HList>(aero: &Aerosol<R>) -> bool {
-        aero.has::<H>() && T::test(aero)
-    }
-}
-
 impl<
-        R: Default + HFoldRightable<Poly<AerosolBuilderFolder>, Aerosol, Output = Aerosol<R>> + HList,
-    > Default for Aerosol<R>
+        R: Default + HFoldRightable<Poly<AerosolDefaultFolder>, Aero, Output = Aero<R>> + ResourceList,
+    > Default for Aero<R>
 {
     fn default() -> Self {
-        R::default().foldr(Poly(AerosolBuilderFolder), Aerosol::new())
+        R::default().foldr(Poly(AerosolDefaultFolder), Aero::new())
     }
 }
 
-impl<R: HList> Aerosol<R> {
+impl<R: ResourceList> Aero<R> {
     /// Directly insert a resource into the collection. Panics if a resource of the
     /// same type already exists.
     pub fn insert<T: Resource>(&self, value: T) {
@@ -94,44 +76,44 @@ impl<R: HList> Aerosol<R> {
     }
 
     /// Builder method equivalent to calling `insert()` but can be chained.
-    pub fn with<T: Resource>(self, value: T) -> Aerosol<HCons<T, R>> {
+    pub fn with<T: Resource>(self, value: T) -> Aero<HCons<T, R>> {
         self.insert(value);
-        Aerosol {
+        Aero {
             inner: self.inner,
             phantom: PhantomData,
         }
     }
 
-    /// Convert into a different variant of the Aerosol type. The new variant must
+    /// Convert into a different variant of the Aero type. The new variant must
     /// not require any resources which are not required as part of this type.
-    pub fn into<R2: HList, I>(self) -> Aerosol<R2>
+    pub fn into<R2: ResourceList, I>(self) -> Aero<R2>
     where
         R: Sculptor<R2, I>,
     {
-        Aerosol {
+        Aero {
             inner: self.inner,
             phantom: PhantomData,
         }
     }
 
-    /// Reborrow as a different variant of the Aerosol type. The new variant must
+    /// Reborrow as a different variant of the Aero type. The new variant must
     /// not require any resources which are not required as part of this type.
     #[allow(clippy::should_implement_trait)]
-    pub fn as_ref<R2: HList, I>(&self) -> &Aerosol<R2>
+    pub fn as_ref<R2: ResourceList, I>(&self) -> &Aero<R2>
     where
         R: Sculptor<R2, I>,
     {
-        // Safety: all Aerosol variants are `#[repr(transparent)]` wrappers around
+        // Safety: all Aero variants are `#[repr(transparent)]` wrappers around
         // the same concrete type.
         unsafe { std::mem::transmute(self) }
     }
 
-    /// Try to convert into a different variant of the Aerosol type. Returns the
+    /// Try to convert into a different variant of the Aero type. Returns the
     /// original type if one or more of the required resources are not fully
     /// constructed.
-    pub fn try_into<R2: HList + HTestable>(self) -> Result<Aerosol<R2>, Self> {
+    pub fn try_into<R2: ResourceList>(self) -> Result<Aero<R2>, Self> {
         if R2::test(&self) {
-            Ok(Aerosol {
+            Ok(Aero {
                 inner: self.inner,
                 phantom: PhantomData,
             })
@@ -140,13 +122,13 @@ impl<R: HList> Aerosol<R> {
         }
     }
 
-    /// Try to convert into a different variant of the Aerosol type. Returns
+    /// Try to convert into a different variant of the Aero type. Returns
     /// `None` if one or more of the required resources are not fully
     /// constructed.
-    pub fn try_as_ref<R2: HList + HTestable>(&self) -> Option<&Aerosol<R2>> {
+    pub fn try_as_ref<R2: ResourceList>(&self) -> Option<&Aero<R2>> {
         if R2::test(self) {
             Some(
-                // Safety: all Aerosol variants are `#[repr(transparent)]` wrappers around
+                // Safety: all Aero variants are `#[repr(transparent)]` wrappers around
                 // the same concrete type.
                 unsafe { std::mem::transmute(self) },
             )
@@ -162,6 +144,24 @@ impl<R: HList> Aerosol<R> {
             self.inner.read().items.get::<Slot<T>>(),
             Some(Slot::Filled(_))
         )
+    }
+
+    /// Assert that a resource exists, returns `self` unchanged if not
+    pub fn try_assert<T: Resource>(self) -> Result<Aero<HCons<T, R>>, Self> {
+        if self.has::<T>() {
+            Ok(Aero {
+                inner: self.inner,
+                phantom: PhantomData,
+            })
+        } else {
+            Err(self)
+        }
+    }
+
+    /// Assert that a resource exists, panic if not
+    pub fn assert<T: Resource>(self) -> Aero<HCons<T, R>> {
+        self.try_assert()
+            .unwrap_or_else(|_| missing_resource::<T>())
     }
 
     pub(crate) fn try_get_slot<T: Resource>(&self) -> Option<SlotDesc<T>> {
@@ -211,14 +211,14 @@ impl<R: HList> Aerosol<R> {
     }
 }
 
-impl<R: HList> AsRef<Aerosol> for Aerosol<R> {
-    fn as_ref(&self) -> &Aerosol {
-        Aerosol::as_ref(self)
+impl<R: ResourceList> AsRef<Aero> for Aero<R> {
+    fn as_ref(&self) -> &Aero {
+        Aero::as_ref(self)
     }
 }
 
-impl<H, T: HList> From<Aerosol<HCons<H, T>>> for Aerosol {
-    fn from(value: Aerosol<HCons<H, T>>) -> Self {
+impl<H: Resource, T: ResourceList> From<Aero<HCons<H, T>>> for Aero {
+    fn from(value: Aero<HCons<H, T>>) -> Self {
         value.into()
     }
 }
@@ -227,32 +227,37 @@ impl<H, T: HList> From<Aerosol<HCons<H, T>>> for Aerosol {
 mod tests {
     use crate::Aero;
 
-    use super::*;
-
     #[test]
     fn create() {
-        let state = Aerosol::new().with(42);
+        let state = Aero::new().with(42);
         state.insert("Hello, world!");
     }
 
     #[test]
     #[should_panic]
     fn duplicate() {
-        let state = Aerosol::new().with(13);
+        let state = Aero::new().with(13);
         state.insert(42);
     }
 
     #[test]
     fn default() {
-        let state: Aero![i32] = Aerosol::default();
+        let state: Aero![i32] = Aero::default();
         state.insert("Hello, world!");
     }
 
     #[test]
     fn convert() {
-        let state: Aero![i32, String, f32] = Aerosol::default();
+        let state: Aero![i32, String, f32] = Aero::default();
         state.insert("Hello, world!");
         let state2: Aero![f32, String] = state.into();
         let _state3: Aero![i32, String, f32] = state2.try_into().unwrap();
+    }
+
+    #[test]
+    fn assert() {
+        let state: Aero![i32, String, f32] = Aero::default();
+        state.insert("Hello, world!");
+        let _state2: Aero![&str, f32] = state.assert::<&str>().into();
     }
 }

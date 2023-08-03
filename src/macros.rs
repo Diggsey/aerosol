@@ -1,7 +1,14 @@
-/// Define a custom `Aerosol` alias with a specific set of required types
+/// Define a custom `Aero` alias with a specific set of required types
+///
+/// Example usage:
+/// ```rust
+/// use aerosol::Aero;
+///
+/// type AppState = Aero![&'static str, i32, bool];
+/// ```
 #[macro_export]
 macro_rules! Aero {
     ($($tok:tt)*) => {
-        $crate::Aerosol<$crate::frunk::HList![$($tok)*]>
+        $crate::Aero<$crate::frunk::HList![$($tok)*]>
     };
 }

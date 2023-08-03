@@ -4,7 +4,7 @@
 //! resources from within route handlers.
 //!
 //! To make use of these extractors, your application state must either be
-//! an `Aerosol`, or you must implement `FromRef<YourState>` for `Aerosol`.
+//! an `Aero`, or you must implement `FromRef<YourState>` for `Aero`.
 
 use std::any::type_name;
 
@@ -15,7 +15,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use crate::{Aerosol, AsyncConstructibleResource, ConstructibleResource, Resource};
+use crate::{Aero, AsyncConstructibleResource, ConstructibleResource, Resource};
 
 /// Type of axum Rejection returned when a resource cannot be acquired
 #[derive(Debug, thiserror::Error)]
@@ -59,18 +59,18 @@ impl DependencyError {
     }
 }
 
-/// Get an already-existing resource from the state. Equivalent to calling `Aerosol::try_get_async`.
+/// Get an already-existing resource from the state. Equivalent to calling `Aero::try_get_async`.
 pub struct Dep<T: Resource>(pub T);
 
 #[async_trait]
 impl<T: ConstructibleResource, S: Send + Sync> FromRequestParts<S> for Dep<T>
 where
-    Aerosol: FromRef<S>,
+    Aero: FromRef<S>,
 {
     type Rejection = DependencyError;
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        Aerosol::from_ref(state)
+        Aero::from_ref(state)
             .try_get_async()
             .await
             .map(Self)
@@ -78,18 +78,18 @@ where
     }
 }
 
-/// Get a resource from the state, or construct it if it doesn't exist. Equivalent to calling `Aerosol::try_obtain_async`.
+/// Get a resource from the state, or construct it if it doesn't exist. Equivalent to calling `Aero::try_obtain_async`.
 pub struct Obtain<T: AsyncConstructibleResource>(pub T);
 
 #[async_trait]
 impl<T: AsyncConstructibleResource, S: Send + Sync> FromRequestParts<S> for Obtain<T>
 where
-    Aerosol: FromRef<S>,
+    Aero: FromRef<S>,
 {
     type Rejection = DependencyError;
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        Aerosol::from_ref(state)
+        Aero::from_ref(state)
             .try_obtain_async()
             .await
             .map(Self)
