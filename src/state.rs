@@ -1,4 +1,4 @@
-use std::{any::Any, marker::PhantomData, sync::Arc, task::Poll};
+use std::{any::Any, fmt::Debug, marker::PhantomData, sync::Arc, task::Poll};
 
 use anymap::hashbrown::{Entry, Map};
 use frunk::{
@@ -20,11 +20,16 @@ pub(crate) struct InnerAero {
 /// Stores a collection of resources keyed on resource type.
 /// Provides methods for accessing this collection.
 /// Can be cheaply cloned.
-#[derive(Debug)]
 #[repr(transparent)]
 pub struct Aero<R: ResourceList = HNil> {
     pub(crate) inner: Arc<RwLock<InnerAero>>,
     pub(crate) phantom: PhantomData<Arc<R>>,
+}
+
+impl<R: ResourceList> Debug for Aero<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner.fmt(f)
+    }
 }
 
 impl Aero {
