@@ -14,8 +14,9 @@ use axum::{
     http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
 };
+use frunk::HCons;
 
-use crate::{Aero, AsyncConstructibleResource, ConstructibleResource, Resource};
+use crate::{Aero, AsyncConstructibleResource, ConstructibleResource, Resource, ResourceList};
 
 /// Type of axum Rejection returned when a resource cannot be acquired
 #[derive(Debug, thiserror::Error)]
@@ -94,5 +95,11 @@ where
             .await
             .map(Self)
             .map_err(DependencyError::failed_to_construct::<T>)
+    }
+}
+
+impl<H: Resource, T: ResourceList> FromRef<Aero<HCons<H, T>>> for Aero {
+    fn from_ref(input: &Aero<HCons<H, T>>) -> Self {
+        input.clone().into()
     }
 }
