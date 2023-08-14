@@ -16,7 +16,7 @@ use axum::{
 };
 use frunk::HCons;
 
-use crate::{Aero, AsyncConstructibleResource, ConstructibleResource, Resource, ResourceList};
+use crate::{Aero, AsyncConstructibleResource, Resource, ResourceList};
 
 /// Type of axum Rejection returned when a resource cannot be acquired
 #[derive(Debug, thiserror::Error)]
@@ -64,7 +64,7 @@ impl DependencyError {
 pub struct Dep<T: Resource>(pub T);
 
 #[async_trait]
-impl<T: ConstructibleResource, S: Send + Sync> FromRequestParts<S> for Dep<T>
+impl<T: Resource, S: Send + Sync> FromRequestParts<S> for Dep<T>
 where
     Aero: FromRef<S>,
 {
@@ -101,5 +101,17 @@ where
 impl<H: Resource, T: ResourceList> FromRef<Aero<HCons<H, T>>> for Aero {
     fn from_ref(input: &Aero<HCons<H, T>>) -> Self {
         input.clone().into()
+    }
+}
+#[cfg(feature = "axum-extra")]
+mod extra_impls {
+    use axum::extract::FromRef;
+
+    use crate::{Aero, ResourceList};
+
+    impl<R: ResourceList> FromRef<Aero<R>> for axum_extra::extract::cookie::Key {
+        fn from_ref(input: &Aero<R>) -> Self {
+            input.try_get().expect("Missing cookie key")
+        }
     }
 }
