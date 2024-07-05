@@ -175,9 +175,9 @@ impl<R: ResourceList> Aero<R> {
 
     /// Convert into a different variant of the Aero type. Any missing required resources
     /// will be automatically constructed.
-    pub fn try_construct_remaining<R2: ResourceList, I>(self) -> anyhow::Result<Aero<R2>>
+    pub fn try_construct_remaining<R2, I>(self) -> anyhow::Result<Aero<R2>>
     where
-        R2: Sculptor<R, I>,
+        R2: Sculptor<R, I> + ResourceList,
         <R2 as Sculptor<R, I>>::Remainder: ConstructibleResourceList,
     {
         <<R2 as Sculptor<R, I>>::Remainder>::construct(&self)?;
@@ -189,9 +189,9 @@ impl<R: ResourceList> Aero<R> {
 
     /// Convert into a different variant of the Aero type. Any missing required resources
     /// will be automatically constructed. Panics if construction of any missing resource fails.
-    pub fn construct_remaining<R2: ResourceList, I>(self) -> Aero<R2>
+    pub fn construct_remaining<R2, I>(self) -> Aero<R2>
     where
-        R2: Sculptor<R, I>,
+        R2: Sculptor<R, I> + ResourceList,
         <R2 as Sculptor<R, I>>::Remainder: ConstructibleResourceList,
     {
         unwrap_constructed_hlist::<<R2 as Sculptor<R, I>>::Remainder, _>(

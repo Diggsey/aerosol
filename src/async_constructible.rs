@@ -88,7 +88,7 @@ macro_rules! impl_async_constructible {
 
                 async fn construct_async(aero: &Aero) -> Result<Self, Self::Error> {
                     let res = $y($t::construct_async(aero).await?);
-                    <$t as IndirectlyAsyncConstructible>::after_construction_async(&res, aero).await?;
+                    <$t as IndirectlyAsyncConstructible>::after_construction_async(&res as &(dyn Any + Send + Sync), aero).await?;
                     Ok(res)
                 }
 
@@ -201,11 +201,9 @@ impl<R: ResourceList> Aero<R> {
 
     /// Convert into a different variant of the Aero type. Any missing required resources
     /// will be automatically asynchronously constructed.
-    pub async fn try_construct_remaining_async<R2: ResourceList, I>(
-        self,
-    ) -> anyhow::Result<Aero<R2>>
+    pub async fn try_construct_remaining_async<R2, I>(self) -> anyhow::Result<Aero<R2>>
     where
-        R2: Sculptor<R, I>,
+        R2: Sculptor<R, I> + ResourceList,
         <R2 as Sculptor<R, I>>::Remainder: AsyncConstructibleResourceList,
     {
         <<R2 as Sculptor<R, I>>::Remainder>::construct_async(&self).await?;
@@ -217,9 +215,9 @@ impl<R: ResourceList> Aero<R> {
 
     /// Convert into a different variant of the Aero type. Any missing required resources
     /// will be automatically asynchronously constructed. Panics if construction of any missing resource fails.
-    pub async fn construct_remaining_async<R2: ResourceList, I>(self) -> Aero<R2>
+    pub async fn construct_remaining_async<R2, I>(self) -> Aero<R2>
     where
-        R2: Sculptor<R, I>,
+        R2: Sculptor<R, I> + ResourceList,
         <R2 as Sculptor<R, I>>::Remainder: AsyncConstructibleResourceList,
     {
         unwrap_constructed_hlist::<<R2 as Sculptor<R, I>>::Remainder, _>(

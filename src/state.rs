@@ -135,7 +135,7 @@ impl<R: ResourceList> Aero<R> {
             Some(
                 // Safety: all Aero variants are `#[repr(transparent)]` wrappers around
                 // the same concrete type.
-                unsafe { std::mem::transmute(self) },
+                unsafe { std::mem::transmute::<&Aero<R>, &Aero<R2>>(self) },
             )
         } else {
             None

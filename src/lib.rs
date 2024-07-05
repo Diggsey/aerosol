@@ -13,6 +13,8 @@
 //! a resource is required it can be accessed infallibly. The `Aero![...]` macro exists to
 //! easily name an `Aero` with a specific set of required resources.
 //!
+//! Cloning or type casting an `Aero` type is cheap (equivalent to cloning an `Arc`).
+//!
 //! ## Optional features
 //!
 //! ### `async`
@@ -122,6 +124,32 @@
 //!     }
 //! }
 //! ```
+//!
+//! ## Implementation details
+//!
+//! The `Aero` type manages shared ownership of a map from resource types to "slots".
+//! For a given resource type, the corresponding "slot" can be in one of three state:
+//! 1) Absent.
+//!     No instance of this resource is present in the map.
+//! 2) Present.
+//!     An instance of this resource exists in the map and can be accessed immediately.
+//! 3) Under construction.
+//!     An instance of this resource is currently under construction, and may be accessed
+//!     once construction has finished.
+//!     The slot maintains a list of threads or tasks waiting for this resource to be
+//!     constructed, and will wake them when the resource becomes available.
+//!
+//! Resources can be constructed synchronously, or (when the feature is enabled) asynchronously.
+//!
+//! If a resource is accessed whilst under construction, the caller will wait for construction
+//! to complete. The caller determines whether the wait occurs synchronously or asynchronously,
+//! depending on whether `obtain()` or `obtain_async()` is used.
+//!
+//! It is possible (and allowed) for a thread to synchronously wait on a resource being constructed
+//! asynchronously in a task, or for a task to asynchronously wait on a resource being synchronously
+//! constructed on a thread.
+//!
+
 pub use frunk;
 
 #[cfg(feature = "async")]

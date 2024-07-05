@@ -1,6 +1,6 @@
 [package]
 name = "aerosol"
-version = "1.0.0-alpha.9"
+version = "1.0.0"
 authors = ["Diggory Blake <diggsey@googlemail.com>"]
 edition = "2018"
 description = "Simple dependency injection for Rust"
@@ -18,7 +18,7 @@ axum-extra = ["axum", "dep:axum-extra"]
 
 [dependencies]
 parking_lot = "0.12.1"
-anymap = { version = "1.0.0-beta.2", features = ["hashbrown"] }
+anymap = { package = "anymap3", version = "1.0.0", features = ["hashbrown"] }
 async-trait = { version = "0.1", optional = true }
 axum = { version = "0.7.5", optional = true }
 axum-extra = { version = "0.9.3", optional = true, features = [
