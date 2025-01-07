@@ -7,10 +7,10 @@
 //! an `Aero`, or you must implement `FromRef<YourState>` for `Aero`.
 
 use std::any::type_name;
+use std::convert::Infallible;
 
-use async_trait::async_trait;
 use axum::{
-    extract::{FromRef, FromRequestParts},
+    extract::{FromRef, FromRequestParts, OptionalFromRequestParts},
     http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
 };
@@ -63,7 +63,6 @@ impl DependencyError {
 /// Get an already-existing resource from the state. Equivalent to calling `Aero::try_get_async`.
 pub struct Dep<T: Resource>(pub T);
 
-#[async_trait]
 impl<T: Resource, S: Send + Sync> FromRequestParts<S> for Dep<T>
 where
     Aero: FromRef<S>,
@@ -79,10 +78,28 @@ where
     }
 }
 
+impl<T: Resource, S: Send + Sync> OptionalFromRequestParts<S> for Dep<T>
+where
+    Aero: FromRef<S>,
+{
+    type Rejection = Infallible;
+
+    // Required method
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        Ok(
+            <Self as FromRequestParts<S>>::from_request_parts(parts, state)
+                .await
+                .ok(),
+        )
+    }
+}
+
 /// Get a resource from the state, or construct it if it doesn't exist. Equivalent to calling `Aero::try_obtain_async`.
 pub struct Obtain<T: AsyncConstructibleResource>(pub T);
 
-#[async_trait]
 impl<T: AsyncConstructibleResource, S: Send + Sync> FromRequestParts<S> for Obtain<T>
 where
     Aero: FromRef<S>,
@@ -95,6 +112,25 @@ where
             .await
             .map(Self)
             .map_err(DependencyError::failed_to_construct::<T>)
+    }
+}
+
+impl<T: AsyncConstructibleResource, S: Send + Sync> OptionalFromRequestParts<S> for Obtain<T>
+where
+    Aero: FromRef<S>,
+{
+    type Rejection = Infallible;
+
+    // Required method
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        Ok(
+            <Self as FromRequestParts<S>>::from_request_parts(parts, state)
+                .await
+                .ok(),
+        )
     }
 }
 
