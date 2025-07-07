@@ -18,6 +18,9 @@ use frunk::HCons;
 
 use crate::{Aero, AsyncConstructibleResource, Resource, ResourceList};
 
+#[cfg(feature = "aide")]
+mod aide;
+
 /// Type of axum Rejection returned when a resource cannot be acquired
 #[derive(Debug, thiserror::Error)]
 pub enum DependencyError {

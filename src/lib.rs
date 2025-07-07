@@ -27,6 +27,12 @@
 //! Provides integrations with the `axum` web framework. See the `axum` module
 //! for more information.
 //!
+//! ### `aide`
+//!
+//! Provides integrations with the `aide` library. Implements the `OperationInput` trait
+//! for `Dep<T>` and `Obtain<T>` types, allowing them to be used in `aide`-generated OpenAPI
+//! documentation.
+//!
 //! ## Example usage
 //!
 //! ```rust
@@ -130,14 +136,14 @@
 //! The `Aero` type manages shared ownership of a map from resource types to "slots".
 //! For a given resource type, the corresponding "slot" can be in one of three state:
 //! 1) Absent.
-//!     No instance of this resource is present in the map.
+//!    No instance of this resource is present in the map.
 //! 2) Present.
-//!     An instance of this resource exists in the map and can be accessed immediately.
+//!    An instance of this resource exists in the map and can be accessed immediately.
 //! 3) Under construction.
-//!     An instance of this resource is currently under construction, and may be accessed
-//!     once construction has finished.
-//!     The slot maintains a list of threads or tasks waiting for this resource to be
-//!     constructed, and will wake them when the resource becomes available.
+//!    An instance of this resource is currently under construction, and may be accessed
+//!    once construction has finished.
+//!    The slot maintains a list of threads or tasks waiting for this resource to be
+//!    constructed, and will wake them when the resource becomes available.
 //!
 //! Resources can be constructed synchronously, or (when the feature is enabled) asynchronously.
 //!
