@@ -72,10 +72,19 @@ impl<R: ResourceList> Aero<R> {
     /// Directly insert a resource into the collection. Panics if a resource of the
     /// same type already exists.
     pub fn insert<T: Resource>(&self, value: T) {
+        if self.try_insert(value).is_err() {
+            duplicate_resource::<T>();
+        }
+    }
+
+    /// Directly insert a resource into the collection. Returns nothing if the resource
+    /// was inserted successfully and the provided value if another resource of the same type already exists.
+    pub fn try_insert<T: Resource>(&self, value: T) -> Result<(), T> {
         match self.inner.write().items.entry() {
-            Entry::Occupied(_) => duplicate_resource::<T>(),
+            Entry::Occupied(_) => Err(value),
             Entry::Vacant(vac) => {
                 vac.insert(Slot::Filled(value));
+                Ok(())
             }
         }
     }
