@@ -6,6 +6,7 @@ edition = "2018"
 description = "Simple dependency injection for Rust"
 repository = "https://github.com/Diggsey/aerosol"
 license = "MIT OR Apache-2.0"
+rust-version = "1.78.0"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -13,7 +14,7 @@ all-features = true
 [features]
 default = []
 async = ["async-trait"]
-axum = ["dep:axum", "async", "tracing", "thiserror"]
+axum = ["dep:axum", "async", "tracing", "thiserror", "anyhow/std"]
 axum-extra = ["axum", "dep:axum-extra"]
 aide = ["dep:aide"]
 
@@ -21,15 +22,18 @@ aide = ["dep:aide"]
 parking_lot = "0.12.1"
 anymap = { package = "anymap3", version = "1.0.0", features = ["hashbrown"] }
 async-trait = { version = "0.1", optional = true }
-axum = { version = "0.8.0", optional = true }
-axum-extra = { version = "0.10.0", optional = true, features = [
+axum = { version = "0.8.4", default-features = false, optional = true }
+axum-extra = { version = "0.10.1", default-features = false, optional = true, features = [
     "cookie-private",
 ] }
-tracing = { version = "0.1", optional = true }
-thiserror = { version = "1.0", optional = true }
-anyhow = { version = "1.0" }
-frunk = "0.4.2"
-aide = { version = "0.15", optional = true, features = ["axum"] }
+tracing = { version = "0.1", default-features = false, optional = true }
+thiserror = { version = "1.0", default-features = false, optional = true }
+anyhow = { version = "1.0", default-features = false }
+frunk = { version = "0.4.2", default-features = false }
+aide = { version = "0.15", optional = true, default-features = false, features = [
+    "axum",
+] }
+time = "=0.3.41" # time 0.3.42 and up require rustc 1.81.0
 
 [dev-dependencies]
-tokio = { version = "1.0", features = ["macros"] }
+tokio = { version = "1.0", features = ["macros", "time", "rt"] }
