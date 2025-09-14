@@ -34,4 +34,4 @@ aide = { version = "0.15", optional = true, default-features = false, features =
 ] }
 
 [dev-dependencies]
-tokio = { version = "1.0", features = ["macros"] }
+tokio = { version = "1.0", features = ["macros", "time", "rt"] }
