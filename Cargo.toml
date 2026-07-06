@@ -6,7 +6,7 @@ edition = "2018"
 description = "Simple dependency injection for Rust"
 repository = "https://github.com/Diggsey/aerosol"
 license = "MIT OR Apache-2.0"
-rust-version = "1.78.0"
+rust-version = "1.84.0"
 
 [package.metadata.docs.rs]
 all-features = true
