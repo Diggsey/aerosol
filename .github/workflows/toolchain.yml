@@ -76,6 +76,12 @@ jobs:
           toolchain: 1.84.0
           override: true
       - uses: actions-rs/cargo@v1
+        # Opt into MSRV-aware dependency resolution so Cargo picks dependency
+        # versions compatible with our declared rust-version instead of the
+        # newest available. This mirrors what a downstream user on our MSRV
+        # would enable via `resolver.incompatible-rust-versions = "fallback"`.
+        env:
+          CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: fallback
         with:
           command: test
           args: --all-features
